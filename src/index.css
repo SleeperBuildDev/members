@@ -1,0 +1,91 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/inter';
+@import '@fontsource/noto-sans-myanmar/400.css';
+@import '@fontsource/noto-sans-myanmar/500.css';
+@import '@fontsource/noto-sans-myanmar/600.css';
+@import '@fontsource/noto-sans-myanmar/700.css';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: 'Inter Variable', 'Noto Sans Myanmar', ui-sans-serif, system-ui, sans-serif;
+
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-fg: var(--fg);
+  --color-fg-soft: var(--fg-soft);
+  --color-fg-faint: var(--fg-faint);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-soft: var(--accent-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+}
+
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --muted: #f0f2f5;
+  --border: #e3e6eb;
+  --fg: #11151c;
+  --fg-soft: #4a5261;
+  --fg-faint: #8a92a0;
+  --accent: #4f46e5;
+  --accent-fg: #ffffff;
+  --accent-soft: #eef0ff;
+  --danger: #dc2626;
+  --danger-soft: #fdeeee;
+  --warn: #b45309;
+  --warn-soft: #fff6e5;
+  --ok: #15803d;
+  --ok-soft: #e9f8ef;
+  color-scheme: light;
+}
+
+:root.dark {
+  --bg: #0b0f17;
+  --surface: #121824;
+  --muted: #1a2130;
+  --border: #252e3f;
+  --fg: #eef1f6;
+  --fg-soft: #aab3c2;
+  --fg-faint: #6b7586;
+  --accent: #8b85ff;
+  --accent-fg: #0b0f17;
+  --accent-soft: #1f2142;
+  --danger: #f87171;
+  --danger-soft: #3a1717;
+  --warn: #fbbf24;
+  --warn-soft: #33270d;
+  --ok: #4ade80;
+  --ok-soft: #10301c;
+  color-scheme: dark;
+}
+
+html, body, #root { height: 100%; }
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Burmese script needs taller lines so stacked marks don't clip. */
+:lang(my) body, .mm { line-height: 1.75; }
+
+input, select, textarea, button { font: inherit; }
+
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+
+@keyframes sheet-in { from { transform: translateY(16px); opacity: 0 } to { transform: none; opacity: 1 } }
+@keyframes fade-in { from { opacity: 0 } to { opacity: 1 } }
+.anim-sheet { animation: sheet-in .22s cubic-bezier(.2,.8,.2,1); }
+.anim-fade { animation: fade-in .18s ease-out; }
