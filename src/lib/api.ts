@@ -51,11 +51,20 @@ export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefi
 export const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined
 export const hasSupabase = !!(SUPABASE_URL && SUPABASE_KEY)
 
+/**
+ * Where the browser sends database requests. On hosts with a pass-through (Vercel), requests go to
+ * "/sb" on the app's own address and the host forwards them to Supabase, so phones never contact
+ * supabase.co directly (it is blocked by some Myanmar internet providers).
+ */
+export function supabaseEndpoint(): string {
+  return __SB_PROXY__ ? window.location.origin + __SB_PROXY__ : SUPABASE_URL!
+}
+
 let instance: Promise<Api> | null = null
 
 export function getApi(): Promise<Api> {
   instance ??= hasSupabase
-    ? import('./supabaseApi').then((m) => m.createSupabaseApi(SUPABASE_URL!, SUPABASE_KEY!))
+    ? import('./supabaseApi').then((m) => m.createSupabaseApi(supabaseEndpoint(), SUPABASE_KEY!))
     : import('./demoApi').then((m) => m.createDemoApi())
   return instance
 }
