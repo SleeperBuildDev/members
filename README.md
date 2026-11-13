@@ -13,7 +13,17 @@ A free web app for recording and searching organisation members. It works on pho
 - **Recycle bin** (30 days), **activity log**, **export to Excel**
 - Burmese and English interface, light and dark mode
 
-Costs nothing: **GitHub Pages** hosts the app and **Supabase** (free tier) stores the data.
+Costs nothing: **Supabase** (free tier) stores the data, and **Vercel** (free Hobby plan) hosts the app.
+
+## 👉 App link for members: https://members-beryl-alpha.vercel.app
+
+**Use this link in Myanmar.** Some Myanmar internet providers block `supabase.co`, and MPT also blocks `*.github.io`.
+On Vercel, the app sends all database requests to `/sb/…` on its own address, and Vercel forwards them to Supabase
+(see `vercel.json`). Phones never contact `supabase.co` directly, so **no VPN is needed** (tested without a VPN on 2026-11-13).
+The GitHub Pages copy (https://sleeperbuilddev.github.io/members/) still works where Supabase isn't blocked.
+Both copies update automatically on every push to `main`.
+
+If `vercel.app` ever gets blocked too, the fallback is to move the database to Firebase (Google), because Google's servers were reachable on every Myanmar provider in OONI tests.
 
 ---
 
