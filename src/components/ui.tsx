@@ -65,7 +65,7 @@ export function Field({ label, hint, error, children, className }: {
 }) {
   return (
     <label className={cx('block', className)}>
-      <span className="mb-1.5 block text-[13px] font-medium text-fg-soft">{label}</span>
+      <span className="mb-1.5 block truncate text-[13px] font-medium text-fg-soft">{label}</span>
       {children}
       {error ? <span className="mt-1 block text-[12px] text-danger">{error}</span>
         : hint ? <span className="mt-1 block text-[12px] text-fg-faint">{hint}</span> : null}
@@ -160,12 +160,12 @@ export function Avatar({ name, src, className }: { name: string; src?: string | 
 
 export function PageHeader({ title, subtitle, actions }: { title: ReactNode; subtitle?: ReactNode; actions?: ReactNode }) {
   return (
-    <div className="mb-5 flex items-end justify-between gap-3">
-      <div className="min-w-0">
-        <h1 className="text-[22px] font-bold tracking-tight">{title}</h1>
-        {subtitle && <p className="text-sm text-fg-soft mt-0.5">{subtitle}</p>}
+    <div className="mb-5 flex items-center justify-between gap-3">
+      <div className="min-w-0 flex-1">
+        <h1 className="truncate text-[22px] font-bold tracking-tight">{title}</h1>
+        {subtitle && <p className="mt-0.5 line-clamp-2 text-sm text-fg-soft">{subtitle}</p>}
       </div>
-      {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
+      {actions && <div className="flex shrink-0 gap-2">{actions}</div>}
     </div>
   )
 }

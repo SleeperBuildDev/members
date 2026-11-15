@@ -94,14 +94,13 @@ export function OrgsPage() {
               <Card key={g.id} className="overflow-hidden">
                 <div className="flex items-center gap-3 border-b border-border px-4 py-3.5">
                   <Logo path={g.logo_path} icon={FolderTree} className="size-11" />
-                  <div className="min-w-0 flex-1">
-                    <button className="text-left font-semibold hover:text-accent" onClick={() => nav(`/?group=${g.id}`)}>{pickName(g, lang)}</button>
-                    <div className="text-[13px] text-fg-faint">{num(list.length)} {t('orgsCount')} · {num(total)} {t('results')}</div>
-                  </div>
-                  {isAdmin && <>
-                    <Button size="icon" variant="ghost" onClick={() => open({ kind: 'group', item: g })} aria-label={t('editGroup')}><Pencil className="size-4" /></Button>
-                    <Button size="sm" onClick={() => open({ kind: 'org', item: { group_id: g.id } })}><Plus className="size-4" /> {t('addOrg')}</Button>
-                  </>}
+                  <button className="min-w-0 flex-1 text-left" onClick={() => nav(`/?group=${g.id}`)}>
+                    <div className="truncate font-semibold hover:text-accent">{pickName(g, lang)}</div>
+                    <div className="truncate text-[13px] text-fg-faint">{num(list.length)} {t('orgsCount')} · {num(total)} {t('results')}</div>
+                  </button>
+                  {isAdmin && (
+                    <Button size="icon" variant="ghost" className="shrink-0" onClick={() => open({ kind: 'group', item: g })} aria-label={t('editGroup')}><Pencil className="size-4" /></Button>
+                  )}
                 </div>
                 <ul className="divide-y divide-border">
                   {list.map((o) => (
@@ -110,15 +109,25 @@ export function OrgsPage() {
                         <Logo path={o.logo_path} />
                         <div className="min-w-0 flex-1">
                           <div className="font-medium truncate">{pickName(o, lang)}</div>
-                          <div className="text-[13px] text-fg-faint">{num(counts[o.id] ?? 0)} {t('results')}</div>
+                          <div className="truncate text-[13px] text-fg-faint">{num(counts[o.id] ?? 0)} {t('results')}</div>
                         </div>
                         {roles[o.id] !== 'admin' && <Badge tone={roles[o.id] === 'editor' ? 'accent' : 'neutral'}>{t(roles[o.id] as 'editor' | 'viewer')}</Badge>}
-                        <ChevronRight className="size-4 text-fg-faint" />
+                        <ChevronRight className="size-4 shrink-0 text-fg-faint" />
                       </button>
-                      {isAdmin && <Button size="icon" variant="ghost" onClick={() => open({ kind: 'org', item: o })} aria-label={t('editOrg')}><Pencil className="size-4" /></Button>}
+                      {isAdmin && <Button size="icon" variant="ghost" className="shrink-0" onClick={() => open({ kind: 'org', item: o })} aria-label={t('editOrg')}><Pencil className="size-4" /></Button>}
                     </li>
                   ))}
-                  {list.length === 0 && <li className="px-4 py-6 text-center text-sm text-fg-faint">—</li>}
+                  {list.length === 0 && !isAdmin && <li className="px-4 py-6 text-center text-sm text-fg-faint">—</li>}
+                  {isAdmin && (
+                    <li>
+                      <button
+                        className="flex w-full items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-accent hover:bg-accent-soft"
+                        onClick={() => open({ kind: 'org', item: { group_id: g.id } })}
+                      >
+                        <Plus className="size-4 shrink-0" /> <span className="truncate">{t('addOrg')}</span>
+                      </button>
+                    </li>
+                  )}
                 </ul>
               </Card>
             )

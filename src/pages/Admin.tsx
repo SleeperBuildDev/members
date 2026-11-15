@@ -52,7 +52,7 @@ export function TrashPage() {
                     {o ? pickName(o, lang) : ''} · {t('deletedOn')} {new Date(m.deleted_at!).toLocaleDateString(lang === 'mm' ? 'my-MM' : 'en-GB')} · {num(daysLeft(m.deleted_at!))} {t('daysLeft')}
                   </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex shrink-0 gap-2">
                   <Button size="sm" onClick={() => restore(m)}><RotateCcw className="size-4" /> {t('restore')}</Button>
                   <Button size="sm" variant="danger" onClick={() => purge(m)}>{t('deleteForever')}</Button>
                 </div>

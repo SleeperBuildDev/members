@@ -22,8 +22,8 @@ export function NrcInput({ value, onChange, error }: { value: NrcParts; onChange
   return (
     <div className="rounded-2xl border border-border bg-muted/40 p-3.5">
       <div className="mb-2.5 flex items-baseline justify-between gap-2">
-        <span className="text-[13px] font-medium text-fg-soft">{t('nrc')}</span>
-        {hasNrc(value) && <span className="text-[13px] font-semibold text-accent">{formatNrc(value, lang)}</span>}
+        <span className="min-w-0 truncate text-[13px] font-medium text-fg-soft">{hasNrc(value) ? t('nrcShort') : t('nrc')}</span>
+        {hasNrc(value) && <span className="shrink-0 whitespace-nowrap text-[13px] font-semibold text-accent">{formatNrc(value, lang)}</span>}
       </div>
       <div className="grid grid-cols-[7.5rem_1fr] gap-2">
         <Select

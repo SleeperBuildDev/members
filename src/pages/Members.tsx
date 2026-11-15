@@ -241,12 +241,12 @@ export function MembersPage() {
             <table className="w-full min-w-[720px] text-sm">
               <thead className="bg-muted/60 text-left text-[12px] font-semibold uppercase tracking-wide text-fg-faint">
                 <tr>
-                  <th className="px-4 py-3">{t('name')}</th>
-                  <th className="px-4 py-3">{t('position')}</th>
-                  <th className="px-4 py-3">{t('organisation')}</th>
-                  <th className="px-4 py-3">{t('nrcShort')}</th>
-                  <th className="px-4 py-3">{t('phone')}</th>
-                  <th className="px-4 py-3 text-right">{t('age')}</th>
+                  <th className="whitespace-nowrap px-4 py-3">{t('name')}</th>
+                  <th className="whitespace-nowrap px-4 py-3">{t('position')}</th>
+                  <th className="whitespace-nowrap px-4 py-3">{t('organisation')}</th>
+                  <th className="whitespace-nowrap px-4 py-3">{t('nrcShort')}</th>
+                  <th className="whitespace-nowrap px-4 py-3">{t('phone')}</th>
+                  <th className="whitespace-nowrap px-4 py-3 text-right">{t('age')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -264,8 +264,8 @@ export function MembersPage() {
                           {m.status === 'inactive' && <Badge>{t('inactive')}</Badge>}
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-fg-soft">{m.position || '—'}</td>
-                      <td className="px-4 py-3 text-fg-soft">{orgName(m.org_id)}</td>
+                      <td className="max-w-40 truncate whitespace-nowrap px-4 py-3 text-fg-soft">{m.position || '—'}</td>
+                      <td className="max-w-48 truncate whitespace-nowrap px-4 py-3 text-fg-soft">{orgName(m.org_id)}</td>
                       <td className="px-4 py-3 tabular-nums text-fg-soft whitespace-nowrap">{formatNrc(m, lang, true) || '—'}</td>
                       <td className="px-4 py-3 tabular-nums text-fg-soft whitespace-nowrap">{formatPhone(m.phone, lang === 'mm') || '—'}</td>
                       <td className="px-4 py-3 text-right tabular-nums text-fg-soft">{age !== null ? num(age) : '—'}</td>
@@ -330,8 +330,8 @@ export function MembersPage() {
 
 function Chip({ children, onClear }: { children: React.ReactNode; onClear: () => void }) {
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-accent-soft py-1 pl-3 pr-1.5 text-[13px] font-medium text-accent">
-      {children}
+    <span className="inline-flex max-w-full items-center gap-1 rounded-full bg-accent-soft py-1 pl-3 pr-1.5 text-[13px] font-medium text-accent">
+      <span className="truncate">{children}</span>
       <button onClick={onClear} className="rounded-full p-0.5 hover:bg-accent/15" aria-label="Remove filter"><X className="size-3.5" /></button>
     </span>
   )

@@ -47,11 +47,10 @@ export function UsersPage() {
       >
         <Avatar name={u.full_name || u.email} />
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="font-medium truncate">{u.full_name || u.email}</span>
+          <div className="flex min-w-0 items-center gap-1.5 [&>span:not(:first-child)]:shrink-0">
+            <span className="min-w-0 truncate font-medium">{u.full_name || u.email}</span>
             {u.id === me?.id && <Badge>{t('you')}</Badge>}
             {u.is_admin && <Badge tone="accent"><ShieldCheck className="size-3" /> {t('admin')}</Badge>}
-            {u.status === 'pending' && <Badge tone="warn">{t('pending')}</Badge>}
             {u.status === 'disabled' && <Badge tone="danger">{t('disabled')}</Badge>}
           </div>
           <div className="text-[13px] text-fg-faint truncate">{u.email}</div>
@@ -62,7 +61,7 @@ export function UsersPage() {
           )}
         </div>
         {u.status === 'pending' && (
-          <Button size="sm" variant="primary" onClick={(e) => { e.stopPropagation(); update(u, { status: 'active' }) }}>
+          <Button size="sm" variant="primary" className="shrink-0" onClick={(e) => { e.stopPropagation(); update(u, { status: 'active' }) }}>
             <Check className="size-4" /> {t('approve')}
           </Button>
         )}
