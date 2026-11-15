@@ -5,6 +5,7 @@ import { pickName, useI18n } from '../lib/i18n'
 import { ageFrom, formatNrc, formatPhone, hasNrc, regions, toMmDigits, townshipsForRegion } from '../lib/text'
 import type { Member } from '../lib/types'
 import { Avatar, Badge, Button, Sheet, useConfirm, useToast } from './ui'
+import { Logo } from './ImagePicker'
 
 export function MemberDetail({ member, onClose, onEdit, onDeleted }: {
   member: Member | null; onClose: () => void; onEdit: (m: Member) => void; onDeleted: () => void
@@ -14,7 +15,14 @@ export function MemberDetail({ member, onClose, onEdit, onDeleted }: {
   const confirm = useConfirm()
   const toast = useToast()
   const [showNrc, setShowNrc] = useState(false)
-  useEffect(() => setShowNrc(false), [member?.id])
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null)
+  const [zoom, setZoom] = useState(false)
+  useEffect(() => { setShowNrc(false); setZoom(false) }, [member?.id])
+  useEffect(() => {
+    setPhotoUrl(null)
+    const path = member?.photo_path
+    if (path) api.photoUrls([path]).then((u) => setPhotoUrl(u[path] ?? null)).catch(() => {})
+  }, [api, member?.photo_path])
   if (!member) return null
 
   const org = orgs.find((o) => o.id === member.org_id)
@@ -57,7 +65,9 @@ export function MemberDetail({ member, onClose, onEdit, onDeleted }: {
       </> : undefined}
     >
       <div className="flex items-center gap-4">
-        <Avatar name={member.name} className="size-16 text-2xl" />
+        <button type="button" onClick={() => photoUrl && setZoom(true)} className={photoUrl ? 'cursor-zoom-in' : 'cursor-default'} aria-label={t('photo')}>
+          <Avatar name={member.name} src={photoUrl} className="size-20 text-2xl" />
+        </button>
         <div className="min-w-0">
           <div className="text-lg font-bold leading-snug">{member.name}</div>
           {member.name_en && <div className="text-sm text-fg-soft">{member.name_en}</div>}
@@ -70,7 +80,7 @@ export function MemberDetail({ member, onClose, onEdit, onDeleted }: {
       </div>
 
       <dl className="mt-6 divide-y divide-border rounded-2xl border border-border">
-        <Row icon={<Building2 />} label={t('organisation')}>
+        <Row icon={org?.logo_path ? <Logo path={org.logo_path} className="size-[18px] rounded-md" /> : <Building2 />} label={t('organisation')}>
           {org ? pickName(org, lang) : '—'}
           {group && <span className="block text-[13px] text-fg-faint">{pickName(group, lang)}</span>}
         </Row>
@@ -98,6 +108,12 @@ export function MemberDetail({ member, onClose, onEdit, onDeleted }: {
         <Row icon={<MapPin />} label={t('address')}>{address || '—'}</Row>
         {member.notes && <Row icon={<StickyNote />} label={t('notes')}><span className="whitespace-pre-wrap">{member.notes}</span></Row>}
       </dl>
+
+      {zoom && photoUrl && (
+        <div className="anim-fade fixed inset-0 z-[80] grid place-items-center bg-black/85 p-6" onClick={() => setZoom(false)}>
+          <img src={photoUrl} alt={member.name} className="max-h-[80dvh] w-full max-w-sm rounded-2xl object-contain shadow-2xl" />
+        </div>
+      )}
 
       <p className="mt-4 text-[12px] text-fg-faint">
         {t('lastUpdated')}: {new Date(member.updated_at).toLocaleString(lang === 'mm' ? 'my-MM' : 'en-GB')}

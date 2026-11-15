@@ -2,6 +2,7 @@ import { createClient, type PostgrestError } from '@supabase/supabase-js'
 import type { Api } from './api'
 import type { Access, ActivityEntry, Group, Member, Org, Profile } from './types'
 import { birthRange, searchTokens } from './text'
+import { extFor } from './image'
 
 function check<T>(res: { data: T; error: PostgrestError | null }): T {
   if (res.error) throw new Error(res.error.message)
@@ -14,6 +15,17 @@ export function createSupabaseApi(url: string, key: string): Api {
   const sb = createClient(url, key, { auth: { persistSession: true, autoRefreshToken: true } })
 
   const uid = async () => (await sb.auth.getSession()).data.session?.user.id ?? null
+
+  // Signed links for private photos are cached ~50 min so lists don't re-download them.
+  const photoCache = new Map<string, { url: string; until: number }>()
+  const PHOTO_TTL = 3600
+
+  /** Removes every stored photo file of a member (folder "<memberId>/"). */
+  async function removeMemberPhotoFiles(memberId: string, keep?: string) {
+    const { data } = await sb.storage.from('member-photos').list(memberId)
+    const names = (data ?? []).map((f) => `${memberId}/${f.name}`).filter((n) => n !== keep)
+    if (names.length) await sb.storage.from('member-photos').remove(names)
+  }
 
   return {
     mode: 'supabase',
@@ -44,10 +56,10 @@ export function createSupabaseApi(url: string, key: string): Api {
     },
 
     async listGroups() {
-      return check(await sb.from('groups').select('id,name,name_en').order('name')) as Group[]
+      return check(await sb.from('groups').select('id,name,name_en,logo_path').order('name')) as Group[]
     },
     async listOrgs() {
-      return check(await sb.from('organisations').select('id,group_id,name,name_en').order('name')) as Org[]
+      return check(await sb.from('organisations').select('id,group_id,name,name_en,logo_path').order('name')) as Org[]
     },
     async myAccess() {
       const id = await uid()
@@ -56,17 +68,23 @@ export function createSupabaseApi(url: string, key: string): Api {
     },
     async saveGroup(g) {
       const row = { name: g.name, name_en: g.name_en ?? '' }
-      check(g.id ? await sb.from('groups').update(row).eq('id', g.id) : await sb.from('groups').insert(row))
+      if (g.id) { check(await sb.from('groups').update(row).eq('id', g.id)); return g.id }
+      return (check(await sb.from('groups').insert(row).select('id').single()) as { id: string }).id
     },
     async deleteGroup(id) {
+      const g = (check(await sb.from('groups').select('logo_path').eq('id', id).single()) as { logo_path: string | null })
       check(await sb.from('groups').delete().eq('id', id))
+      if (g.logo_path) await sb.storage.from('logos').remove([g.logo_path]).catch(() => {})
     },
     async saveOrg(o) {
       const row = { name: o.name, name_en: o.name_en ?? '', group_id: o.group_id }
-      check(o.id ? await sb.from('organisations').update(row).eq('id', o.id) : await sb.from('organisations').insert(row))
+      if (o.id) { check(await sb.from('organisations').update(row).eq('id', o.id)); return o.id }
+      return (check(await sb.from('organisations').insert(row).select('id').single()) as { id: string }).id
     },
     async deleteOrg(id) {
+      const o = (check(await sb.from('organisations').select('logo_path').eq('id', id).single()) as { logo_path: string | null })
       check(await sb.from('organisations').delete().eq('id', id))
+      if (o.logo_path) await sb.storage.from('logos').remove([o.logo_path]).catch(() => {})
     },
     async memberCounts() {
       const rows = check(await sb.rpc('member_counts')) as { org_id: string; n: number }[]
@@ -89,7 +107,9 @@ export function createSupabaseApi(url: string, key: string): Api {
       return { rows: (res.data ?? []) as Member[], count: res.count ?? 0 }
     },
     async saveMember(m) {
-      const { id, ...row } = m
+      const { id, ...rest } = m
+      const row: Record<string, unknown> = { ...rest }
+      delete row.photo_path // photos are changed only through setMemberPhoto
       const res = id
         ? await sb.from('members').update(row).eq('id', id).select().single()
         : await sb.from('members').insert(row).select().single()
@@ -102,9 +122,13 @@ export function createSupabaseApi(url: string, key: string): Api {
       check(await sb.from('members').update({ deleted_at: null, deleted_by: null }).eq('id', id))
     },
     async purgeMember(id) {
+      await removeMemberPhotoFiles(id).catch(() => {})
       check(await sb.from('members').delete().eq('id', id))
     },
     async purgeOld() {
+      const cutoff = new Date(Date.now() - 30 * 864e5).toISOString()
+      const old = check(await sb.from('members').select('id').lt('deleted_at', cutoff)) as { id: string }[]
+      for (const m of old) await removeMemberPhotoFiles(m.id).catch(() => {})
       return Number(check(await sb.rpc('purge_old_deleted')))
     },
     async listDeleted() {
@@ -131,6 +155,54 @@ export function createSupabaseApi(url: string, key: string): Api {
     },
     async logNrcView(memberId) {
       await sb.rpc('log_nrc_view', { p_member: memberId })
+    },
+
+    async setLogo(kind, id, blob) {
+      const table = kind === 'group' ? 'groups' : 'organisations'
+      const old = (check(await sb.from(table).select('logo_path').eq('id', id).single()) as { logo_path: string | null }).logo_path
+      let path: string | null = null
+      if (blob) {
+        path = `${kind}/${id}/${Date.now()}.${extFor(blob)}`
+        const up = await sb.storage.from('logos').upload(path, blob, { contentType: blob.type, cacheControl: '31536000' })
+        if (up.error) throw new Error(up.error.message)
+      }
+      check(await sb.from(table).update({ logo_path: path }).eq('id', id))
+      if (old && old !== path) await sb.storage.from('logos').remove([old]).catch(() => {})
+      return path
+    },
+    async setMemberPhoto(memberId, blob) {
+      let path: string | null = null
+      if (blob) {
+        path = `${memberId}/${Date.now()}.${extFor(blob)}`
+        const up = await sb.storage.from('member-photos').upload(path, blob, { contentType: blob.type, cacheControl: '31536000' })
+        if (up.error) throw new Error(up.error.message)
+      }
+      check(await sb.from('members').update({ photo_path: path }).eq('id', memberId))
+      await removeMemberPhotoFiles(memberId, path ?? undefined).catch(() => {})
+      return path
+    },
+    logoUrl(path) {
+      return path ? sb.storage.from('logos').getPublicUrl(path).data.publicUrl : null
+    },
+    async photoUrls(paths) {
+      const now = Date.now()
+      const out: Record<string, string> = {}
+      const need: string[] = []
+      for (const p of new Set(paths.filter(Boolean))) {
+        const c = photoCache.get(p)
+        if (c && c.until > now) out[p] = c.url
+        else need.push(p)
+      }
+      if (need.length) {
+        const { data } = await sb.storage.from('member-photos').createSignedUrls(need, PHOTO_TTL)
+        for (const d of data ?? []) {
+          if (d.path && d.signedUrl) {
+            out[d.path] = d.signedUrl
+            photoCache.set(d.path, { url: d.signedUrl, until: now + (PHOTO_TTL - 600) * 1000 })
+          }
+        }
+      }
+      return out
     },
 
     async listUsers() {

@@ -26,6 +26,7 @@ export function MembersPage() {
   const [positions, setPositions] = useState<string[]>([])
   const [townships, setTownships] = useState<string[]>([])
   const [selected, setSelected] = useState<Member | null>(null)
+  const [photos, setPhotos] = useState<Record<string, string>>({})
   const [editing, setEditing] = useState<Member | null | 'new'>(null)
   const [exporting, setExporting] = useState(false)
 
@@ -63,6 +64,13 @@ export function MembersPage() {
   }, [api, f, scopeOrgIds, toast, t])
 
   useEffect(() => { load(0) }, [load])
+
+  // Fetch display links for the photos of the members currently shown (cached in the API layer).
+  useEffect(() => {
+    const paths = rows.map((m) => m.photo_path).filter((p): p is string => !!p && !photos[p])
+    if (!paths.length) return
+    api.photoUrls(paths).then((u) => setPhotos((prev) => ({ ...prev, ...u }))).catch(() => {})
+  }, [api, rows]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const refreshFacets = useCallback(() => {
     api.positions().then(setPositions).catch(() => {})
@@ -248,7 +256,7 @@ export function MembersPage() {
                     <tr key={m.id} onClick={() => setSelected(m)} className="cursor-pointer transition hover:bg-muted/50">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
-                          <Avatar name={m.name} className="size-9 text-sm" />
+                          <Avatar name={m.name} src={m.photo_path ? photos[m.photo_path] : null} className="size-9 text-sm" />
                           <div className="min-w-0">
                             <div className="font-medium truncate">{m.name}</div>
                             {m.name_en && <div className="text-[12px] text-fg-faint truncate">{m.name_en}</div>}
@@ -272,7 +280,7 @@ export function MembersPage() {
           <div className="mt-2 space-y-2 lg:hidden">
             {rows.map((m) => (
               <button key={m.id} onClick={() => setSelected(m)} className="flex w-full items-center gap-3 rounded-2xl border border-border bg-surface p-3 text-left active:bg-muted">
-                <Avatar name={m.name} />
+                <Avatar name={m.name} src={m.photo_path ? photos[m.photo_path] : null} />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <span className="font-semibold truncate">{m.name}</span>

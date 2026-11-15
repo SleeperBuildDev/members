@@ -5,6 +5,7 @@ import { pickName, useI18n } from '../lib/i18n'
 import { cleanText, isZawgyi, normalizePhone, toMmDigits } from '../lib/text'
 import type { Member, MemberInput } from '../lib/types'
 import { AddressInput, NrcInput } from './NrcInput'
+import { ImagePicker } from './ImagePicker'
 import { Button, Field, Input, Segmented, Select, Sheet, Textarea, useToast } from './ui'
 
 const blank = (orgId: string): MemberInput => ({
@@ -26,15 +27,22 @@ export function MemberForm({ open, member, defaultOrgId, onClose, onSaved }: {
   const [dups, setDups] = useState({ nrc: false, phone: false })
   const [positions, setPositions] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
+  const [photo, setPhoto] = useState<Blob | null | undefined>(undefined)
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null)
 
   useEffect(() => {
     if (!open) return
     const org = defaultOrgId && editableOrgs.some((o) => o.id === defaultOrgId) ? defaultOrgId : editableOrgs[0]?.id ?? ''
     if (member) {
-      const { deleted_at: _d, created_at: _c, updated_at: _u, ...rest } = member
+      const { deleted_at: _d, created_at: _c, updated_at: _u, photo_path: _p, ...rest } = member
       setF(rest)
     } else setF(blank(org))
     setErrors({}); setDups({ nrc: false, phone: false })
+    setPhoto(undefined); setPhotoUrl(null)
+    if (member?.photo_path) {
+      const path = member.photo_path
+      api.photoUrls([path]).then((u) => setPhotoUrl(u[path] ?? null)).catch(() => {})
+    }
     api.positions().then(setPositions).catch(() => {})
   }, [open, member, defaultOrgId, editableOrgs, api])
 
@@ -79,7 +87,15 @@ export function MemberForm({ open, member, defaultOrgId, onClose, onSaved }: {
         nrc_type: partialNrc ? f.nrc_type : '',
       })
       toast(t('saved'))
-      onSaved(saved)
+      let result = saved
+      if (photo !== undefined) {
+        try {
+          result = { ...saved, photo_path: await api.setMemberPhoto(saved.id, photo) }
+        } catch (err) {
+          toast(`${t('photo')}: ${(err as Error).message}`, 'error')
+        }
+      }
+      onSaved(result)
     } catch (err) {
       toast(`${t('error')}: ${(err as Error).message}`, 'error')
     } finally {
@@ -99,6 +115,8 @@ export function MemberForm({ open, member, defaultOrgId, onClose, onSaved }: {
       </>}
     >
       <div className="space-y-4">
+        <ImagePicker kind="photo" name={f.name} currentUrl={photoUrl} value={photo} onChange={setPhoto} />
+
         <Field label={t('organisation')} error={errors.org_id}>
           <Select value={f.org_id} onChange={(e) => set({ org_id: e.target.value })}>
             {groups.map((g) => {

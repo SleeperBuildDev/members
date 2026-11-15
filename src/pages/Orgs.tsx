@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
-import { Building2, ChevronRight, FolderPlus, Pencil, Plus, Trash2 } from 'lucide-react'
+import { Building2, ChevronRight, FolderPlus, FolderTree, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useApp } from '../lib/store'
 import { pickName, useI18n } from '../lib/i18n'
 import { cleanText, toMmDigits } from '../lib/text'
 import type { Group, Org } from '../lib/types'
 import { Badge, Button, Card, Empty, Field, Input, PageHeader, Select, Sheet, useConfirm, useToast } from '../components/ui'
+import { ImagePicker, Logo } from '../components/ImagePicker'
 
 type Editing =
   | { kind: 'group'; item: Partial<Group> }
@@ -24,6 +25,7 @@ export function OrgsPage() {
   const [nameEn, setNameEn] = useState('')
   const [groupId, setGroupId] = useState('')
   const [saving, setSaving] = useState(false)
+  const [logo, setLogo] = useState<Blob | null | undefined>(undefined)
 
   useEffect(() => { api.memberCounts().then(setCounts).catch(() => {}) }, [api, orgs])
 
@@ -32,14 +34,17 @@ export function OrgsPage() {
     setName(e?.item.name ?? '')
     setNameEn(e?.item.name_en ?? '')
     setGroupId(e?.kind === 'org' ? e.item.group_id ?? '' : '')
+    setLogo(undefined)
   }
 
   const save = async () => {
     if (!editing || !name.trim()) return
     setSaving(true)
     try {
-      if (editing.kind === 'group') await api.saveGroup({ id: editing.item.id, name: cleanText(name), name_en: nameEn.trim() })
-      else await api.saveOrg({ id: editing.item.id, name: cleanText(name), name_en: nameEn.trim(), group_id: groupId })
+      const id = editing.kind === 'group'
+        ? await api.saveGroup({ id: editing.item.id, name: cleanText(name), name_en: nameEn.trim() })
+        : await api.saveOrg({ id: editing.item.id, name: cleanText(name), name_en: nameEn.trim(), group_id: groupId })
+      if (logo !== undefined) await api.setLogo(editing.kind, id, logo)
       await reload()
       setEditing(null)
       toast(t('saved'))
@@ -81,13 +86,14 @@ export function OrgsPage() {
           />
         </Card>
       ) : (
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid gap-4 xl:grid-cols-2">
           {visibleGroups.map((g) => {
             const list = orgs.filter((o) => o.group_id === g.id && roles[o.id])
             const total = list.reduce((s, o) => s + (counts[o.id] ?? 0), 0)
             return (
               <Card key={g.id} className="overflow-hidden">
                 <div className="flex items-center gap-3 border-b border-border px-4 py-3.5">
+                  <Logo path={g.logo_path} icon={FolderTree} className="size-11" />
                   <div className="min-w-0 flex-1">
                     <button className="text-left font-semibold hover:text-accent" onClick={() => nav(`/?group=${g.id}`)}>{pickName(g, lang)}</button>
                     <div className="text-[13px] text-fg-faint">{num(list.length)} {t('orgsCount')} · {num(total)} {t('results')}</div>
@@ -101,7 +107,7 @@ export function OrgsPage() {
                   {list.map((o) => (
                     <li key={o.id} className="flex items-center gap-2 pr-2">
                       <button className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3 text-left hover:bg-muted/50" onClick={() => nav(`/?org=${o.id}`)}>
-                        <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent"><Building2 className="size-[18px]" /></div>
+                        <Logo path={o.logo_path} />
                         <div className="min-w-0 flex-1">
                           <div className="font-medium truncate">{pickName(o, lang)}</div>
                           <div className="text-[13px] text-fg-faint">{num(counts[o.id] ?? 0)} {t('results')}</div>
@@ -138,6 +144,10 @@ export function OrgsPage() {
               </Select>
             </Field>
           )}
+          <div>
+            <span className="mb-1.5 block text-[13px] font-medium text-fg-soft">{t('logo')}</span>
+            <ImagePicker kind="logo" name={name} currentUrl={api.logoUrl(editing?.item.logo_path)} value={logo} onChange={setLogo} />
+          </div>
           <Field label={t('groupNameMm')}><Input value={name} onChange={(e) => setName(e.target.value)} autoFocus /></Field>
           <Field label={<>{t('groupNameEn')} <span className="font-normal text-fg-faint">· {t('optional')}</span></>}>
             <Input value={nameEn} onChange={(e) => setNameEn(e.target.value)} />

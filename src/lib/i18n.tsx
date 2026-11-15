@@ -160,6 +160,14 @@ const dict = {
     en: 'Use your browser menu: "Add to Home screen" or "Install app".',
   },
   resetDemo: { mm: 'နမူနာဒေတာ ပြန်စမည်', en: 'Reset demo data' },
+  photo: { mm: 'ဓာတ်ပုံ', en: 'Photo' },
+  logo: { mm: 'လိုဂို', en: 'Logo' },
+  choosePicture: { mm: 'ပုံရွေးမည်', en: 'Choose picture' },
+  changePicture: { mm: 'ပုံပြောင်းမည်', en: 'Change' },
+  removePicture: { mm: 'ပုံဖယ်မည်', en: 'Remove' },
+  compressing: { mm: 'ပုံချုံ့နေသည်…', en: 'Compressing…' },
+  pictureHint: { mm: 'ဖုန်းပုံကို အလိုအလျောက် ချုံ့ပေးပါမည်', en: 'Phone photos are shrunk automatically' },
+  pictureError: { mm: 'ဤပုံကို ဖွင့်၍မရပါ (JPG/PNG သုံးပါ)', en: "Couldn't read this picture (use JPG or PNG)" },
   loadMore: { mm: 'ထပ်ပြမည်', en: 'Load more' },
 } as const
 

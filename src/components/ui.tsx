@@ -130,10 +130,24 @@ export function Spinner({ className }: { className?: string }) {
   return <Loader2 className={cx('size-5 animate-spin text-fg-faint', className)} />
 }
 
-export function Avatar({ name, className }: { name: string; className?: string }) {
+export function Avatar({ name, src, className }: { name: string; src?: string | null; className?: string }) {
+  const [broken, setBroken] = useState(false)
+  useEffect(() => setBroken(false), [src])
   const letter = [...(name.trim() || '?')][0]
   let h = 0
   for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) % 360
+  if (src && !broken) {
+    return (
+      <img
+        src={src}
+        alt=""
+        loading="lazy"
+        decoding="async"
+        onError={() => setBroken(true)}
+        className={cx('shrink-0 rounded-full bg-muted object-cover', className ?? 'size-10 text-sm')}
+      />
+    )
+  }
   return (
     <div
       className={cx('grid shrink-0 place-items-center rounded-full font-semibold text-white', className ?? 'size-10 text-sm')}

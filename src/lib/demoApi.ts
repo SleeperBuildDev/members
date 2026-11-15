@@ -1,6 +1,7 @@
 import type { Api } from './api'
 import type { Access, ActivityEntry, Group, Member, Org, Profile } from './types'
 import { birthRange, memberSearchText, searchTokens } from './text'
+import { blobToDataUrl } from './image'
 
 /**
  * Demo backend: same behaviour as Supabase, but everything lives in this browser's
@@ -18,6 +19,8 @@ interface Db {
 }
 
 const KEY = 'member-registry-demo'
+/** Demo pictures live in their own key (path → data URL) so the main record stays small. */
+const IMG_KEY = 'member-registry-demo-images'
 const id = () => crypto.randomUUID()
 const now = () => new Date().toISOString()
 
@@ -85,6 +88,19 @@ export function createDemoApi(): Api {
   }
   const live = () => db.members.filter((m) => !m.deleted_at)
 
+  let images: Record<string, string> = {}
+  try { images = JSON.parse(localStorage.getItem(IMG_KEY) ?? '{}') } catch { /* ignore */ }
+  const saveImages = () => {
+    try { localStorage.setItem(IMG_KEY, JSON.stringify(images)) } catch {
+      throw new Error('Demo storage is full — remove some pictures or reset the demo')
+    }
+  }
+  const putImage = async (path: string | null, blob: Blob | null, old?: string | null) => {
+    if (old) delete images[old]
+    if (path && blob) images[path] = await blobToDataUrl(blob)
+    saveImages()
+  }
+
   return {
     mode: 'demo',
 
@@ -101,9 +117,11 @@ export function createDemoApi(): Api {
     async listOrgs() { return delay([...db.orgs].sort((a, b) => a.name.localeCompare(b.name))) },
     async myAccess() { return delay(db.access.filter((a) => a.user_id === db.me)) },
     async saveGroup(g) {
+      const gid = g.id ?? id()
       if (g.id) db.groups = db.groups.map((x) => (x.id === g.id ? { ...x, name: g.name, name_en: g.name_en ?? '' } : x))
-      else db.groups.push({ id: id(), name: g.name, name_en: g.name_en ?? '' })
+      else db.groups.push({ id: gid, name: g.name, name_en: g.name_en ?? '' })
       persist()
+      return gid
     },
     async deleteGroup(gid) {
       if (db.orgs.some((o) => o.group_id === gid)) throw new Error('restrict')
@@ -112,9 +130,11 @@ export function createDemoApi(): Api {
       persist()
     },
     async saveOrg(o) {
+      const oid = o.id ?? id()
       if (o.id) db.orgs = db.orgs.map((x) => (x.id === o.id ? { ...x, name: o.name, name_en: o.name_en ?? '', group_id: o.group_id } : x))
-      else db.orgs.push({ id: id(), group_id: o.group_id, name: o.name, name_en: o.name_en ?? '' })
+      else db.orgs.push({ id: oid, group_id: o.group_id, name: o.name, name_en: o.name_en ?? '' })
       persist()
+      return oid
     },
     async deleteOrg(oid) {
       if (db.members.some((m) => m.org_id === oid)) throw new Error('restrict')
@@ -169,6 +189,7 @@ export function createDemoApi(): Api {
     async purgeMember(mid) {
       const m = db.members.find((x) => x.id === mid)
       if (m) log('purged', m)
+      if (m?.photo_path) { delete images[m.photo_path]; saveImages() }
       db.members = db.members.filter((x) => x.id !== mid)
       persist()
     },
@@ -193,6 +214,31 @@ export function createDemoApi(): Api {
     },
     async positions() { return delay([...new Set(live().map((m) => m.position).filter(Boolean))].sort()) },
     async townships() { return delay([...new Set(live().map((m) => m.address_township).filter(Boolean))].sort()) },
+    async setLogo(kind, id, blob) {
+      const list = kind === 'group' ? db.groups : db.orgs
+      const item = list.find((x) => x.id === id)
+      if (!item) throw new Error('Not found')
+      const path = blob ? `${kind}/${id}/${Date.now()}` : null
+      await putImage(path, blob, item.logo_path)
+      item.logo_path = path
+      persist()
+      return path
+    },
+    async setMemberPhoto(memberId, blob) {
+      const m = db.members.find((x) => x.id === memberId)
+      if (!m) throw new Error('Not found')
+      const path = blob ? `${memberId}/${Date.now()}` : null
+      await putImage(path, blob, m.photo_path)
+      m.photo_path = path
+      persist()
+      return path
+    },
+    logoUrl(path) { return path ? images[path] ?? null : null },
+    async photoUrls(paths) {
+      const out: Record<string, string> = {}
+      for (const p of paths) if (p && images[p]) out[p] = images[p]
+      return out
+    },
     async logNrcView(mid) {
       const m = db.members.find((x) => x.id === mid)
       if (m) { log('nrc_viewed', m); persist() }

@@ -320,3 +320,5 @@ create policy "admin reads log" on public.activity_log for select
   using (public.is_admin());
 
 grant execute on function public.ping() to anon;
+
+-- Photos and logos: run supabase/002_photos.sql after this file.

@@ -12,6 +12,7 @@ A free web app for recording and searching organisation members. It works on pho
 - **NRC hidden** until someone taps "Show", and every reveal is logged
 - **Recycle bin** (30 days), **activity log**, **export to Excel**
 - Burmese and English interface, light and dark mode
+- **Logos** for groups and organisations, **photos** for members. Pictures are shrunk and compressed on the phone before upload (photo 400×400, about 5–40 KB; logo up to 256 px, about 3–20 KB), so 1 GB of free storage holds tens of thousands. Member photos are private and follow the same access rules as member data.
 
 Costs nothing: **Supabase** (free tier) stores the data, and **Vercel** (free Hobby plan) hosts the app.
 
@@ -56,6 +57,8 @@ Open http://localhost:5173.
 
 > The anon key is safe to put in a website. The database rules in `schema.sql` decide who can see what.
 > **Never** put the `service_role` key anywhere in this app.
+
+> **Already set up before photos existed?** Also run [`supabase/002_photos.sql`](supabase/002_photos.sql) once in the SQL Editor.
 
 ### 2. Put the app on GitHub
 

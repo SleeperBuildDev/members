@@ -14,6 +14,7 @@ export interface Group {
   id: string
   name: string
   name_en: string
+  logo_path?: string | null
 }
 
 export interface Org {
@@ -21,6 +22,7 @@ export interface Org {
   group_id: string
   name: string
   name_en: string
+  logo_path?: string | null
 }
 
 export interface Access {
@@ -48,12 +50,13 @@ export interface Member {
   phone: string
   status: 'active' | 'inactive'
   notes: string
+  photo_path?: string | null
   deleted_at: string | null
   created_at: string
   updated_at: string
 }
 
-export type MemberInput = Omit<Member, 'id' | 'deleted_at' | 'created_at' | 'updated_at'> & { id?: string }
+export type MemberInput = Omit<Member, 'id' | 'deleted_at' | 'created_at' | 'updated_at' | 'photo_path'> & { id?: string }
 
 export interface MemberFilters {
   q: string

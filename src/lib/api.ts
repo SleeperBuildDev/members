@@ -18,9 +18,11 @@ export interface Api {
   listGroups(): Promise<Group[]>
   listOrgs(): Promise<Org[]>
   myAccess(): Promise<Access[]>
-  saveGroup(g: Partial<Group> & { name: string }): Promise<void>
+  /** Returns the group id (new or existing). */
+  saveGroup(g: Partial<Group> & { name: string }): Promise<string>
   deleteGroup(id: string): Promise<void>
-  saveOrg(o: Partial<Org> & { name: string; group_id: string }): Promise<void>
+  /** Returns the organisation id (new or existing). */
+  saveOrg(o: Partial<Org> & { name: string; group_id: string }): Promise<string>
   deleteOrg(id: string): Promise<void>
   memberCounts(): Promise<Record<string, number>>
 
@@ -37,6 +39,16 @@ export interface Api {
   positions(): Promise<string[]>
   townships(): Promise<string[]>
   logNrcView(memberId: string): Promise<void>
+
+  // pictures (already compressed in the browser — see image.ts)
+  /** Upload / replace (blob) or remove (null) a logo. Returns the new stored path. */
+  setLogo(kind: 'group' | 'org', id: string, blob: Blob | null): Promise<string | null>
+  /** Upload / replace (blob) or remove (null) a member photo. Returns the new stored path. */
+  setMemberPhoto(memberId: string, blob: Blob | null): Promise<string | null>
+  /** Displayable URL for a logo path (logos are public). */
+  logoUrl(path: string | null | undefined): string | null
+  /** Displayable URLs for private member photos, keyed by path. */
+  photoUrls(paths: string[]): Promise<Record<string, string>>
 
   // admin
   listUsers(): Promise<Profile[]>
